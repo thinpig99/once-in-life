@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { CATS } from '../shared/catalog.js'
 import { won } from './lib'
@@ -45,10 +46,16 @@ export function Dial({ value, onChange, label = '전체 예산 (만원)' }: { va
   const ticks = []
   for (let v = 1000; v <= 15000; v += 500) ticks.push(v)
   const x = -((value - 1000) / 500) * 12 - 6
+  const drag = useRef<{ x: number; v: number } | null>(null)
   return (
     <div>
       <div style={{ textAlign: 'center' }}><span style={{ fontSize: 40, fontWeight: 800, letterSpacing: -1, color: 'var(--deep)' }}>{won(value)}</span><span style={{ fontSize: 18, fontWeight: 600, color: 'var(--deep)' }}> 만원</span></div>
-      <div style={{ position: 'relative', height: 84, margin: '12px -20px 0', overflow: 'hidden', background: 'var(--bg2)' }}>
+      <div
+        onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); drag.current = { x: e.clientX, v: value } }}
+        onPointerMove={(e) => { if (!drag.current) return; const nv = Math.round((drag.current.v - ((e.clientX - drag.current.x) / 12) * 500) / 100) * 100; onChange(Math.min(15000, Math.max(1000, nv))) }}
+        onPointerUp={() => { drag.current = null }}
+        onPointerCancel={() => { drag.current = null }}
+        style={{ position: 'relative', height: 84, margin: '12px -20px 0', overflow: 'hidden', background: 'var(--bg2)', touchAction: 'none', cursor: 'grab', userSelect: 'none' }}>
         <div style={{ position: 'absolute', top: 14, left: '50%', display: 'flex', transform: `translateX(${x}px)`, transition: 'transform 0.08s' }}>
           {ticks.map((v) => {
             const major = v % 1000 === 0
@@ -62,10 +69,13 @@ export function Dial({ value, onChange, label = '전체 예산 (만원)' }: { va
         </div>
         <div style={{ position: 'absolute', left: 'calc(50% - 1.5px)', top: 8, width: 3, height: 44, borderRadius: 2, background: 'var(--main)' }} />
         <label htmlFor="dial" className="sr">{label}</label>
-        <input id="dial" type="range" min={1000} max={15000} step={100} value={value} onChange={(e) => onChange(Number(e.target.value))}
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', margin: 0, opacity: 0, cursor: 'ew-resize' }} />
+        <input id="dial" className="sr" type="range" min={1000} max={15000} step={100} value={value} onChange={(e) => onChange(Number(e.target.value))} />
       </div>
-      <div className="muted" style={{ fontSize: 12, textAlign: 'center', marginTop: 6 }}>좌우로 밀어서 조절</div>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 8 }}>
+        <button type="button" className="step-btn" aria-label="100만원 줄이기" onClick={() => onChange(Math.max(1000, value - 100))}>−</button>
+        <span className="muted" style={{ fontSize: 12 }}>좌우로 밀거나 버튼으로 조절</span>
+        <button type="button" className="step-btn" aria-label="100만원 늘리기" onClick={() => onChange(Math.min(15000, value + 100))}>+</button>
+      </div>
     </div>
   )
 }
