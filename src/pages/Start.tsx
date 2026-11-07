@@ -63,7 +63,10 @@ export function Onboarding() {
           {!undecided ? (
             <>
               <label htmlFor="wdate" className="muted small" style={{ marginTop: 32, marginBottom: 8 }}>예정일</label>
-              <input id="wdate" type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
+              <div style={{ position: "relative" }}>
+                <input id="wdate" type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
+                {!date && <span aria-hidden="true" style={{ position: "absolute", left: 16, top: 0, lineHeight: "52px", color: "var(--faint)", pointerEvents: "none", fontSize: 16 }}>날짜를 선택해 주세요</span>}
+              </div>
               {days !== null && <div style={{ fontSize: 13, color: 'var(--main)', fontWeight: 600, marginTop: 10 }}>{days > 0 ? `D-${days} · 함께 차근차근 준비해요` : '날짜를 다시 확인해 주세요'}</div>}
             </>
           ) : (

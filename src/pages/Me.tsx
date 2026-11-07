@@ -31,7 +31,7 @@ export default function Me() {
         <div className="card">
           <label htmlFor="wd" className="h2" style={{ fontSize: 16, display: 'block' }}>결혼 예정일</label>
           <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-            <input id="wd" type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} style={{ background: '#fff' }} />
+            <input id="wd" type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} style={{ background: "#fff", flex: 1, minWidth: 0 }} />
             <button className="btn-line" style={{ width: 80, flexShrink: 0 }} onClick={() => { patchPlanner({ wedding_date: date || null }); toast('저장했어요') }}>저장</button>
           </div>
           {p.wedding_date && <button onClick={() => { setDate(''); patchPlanner({ wedding_date: null }) }} style={{ marginTop: 8, height: 36, border: 'none', background: 'transparent', color: 'var(--sub)', fontSize: 13, padding: 0 }}>아직 미정으로 바꾸기</button>}
