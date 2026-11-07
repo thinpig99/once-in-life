@@ -53,7 +53,7 @@ export default async function handler(req, res) {
 
 ${context(p)}`
     const contents = [...history, { role: 'user', text }].map((m) => ({ role: m.role === 'model' ? 'model' : 'user', parts: [{ text: m.text }] }))
-    const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
+    const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash'
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
