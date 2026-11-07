@@ -5,7 +5,8 @@ import { Analytics } from '@vercel/analytics/react'
 import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css'
 import './index.css'
 import { StoreProvider, useStore } from './store'
-import { Welcome, Onboarding, Join } from './pages/Start'
+import { Onboarding, Join } from './pages/Start'
+import Intro from './pages/Intro'
 import Home from './pages/Home'
 import Task from './pages/Task'
 import Budget from './pages/Budget'
@@ -30,7 +31,7 @@ function Routed() {
         </>
       ) : (
         <>
-          <Route path="/" element={<Welcome />} />
+          <Route path="/" element={<Intro />} />
           <Route path="/start" element={<Onboarding />} />
         </>
       )}
