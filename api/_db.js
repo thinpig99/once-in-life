@@ -17,7 +17,7 @@ export async function auth(req) {
 export async function loadPlanner(id) {
   const [p] = await sql`select id, wedding_date::text as wedding_date, budget, pct, invite_code from planners where id = ${id}`
   if (!p) return null
-  const tasks = await sql`select key, status, spent, memo, subs, hidden, name, offset_days, sub_names from tasks where planner_id = ${id}`
+  const tasks = await sql`select key, status, spent, memo, subs, hidden, name, offset_days, sub_names, extra from tasks where planner_id = ${id}`
   const custom = await sql`select key, phase, name, offset_days, axis, cat, sub_names from custom_tasks where planner_id = ${id} order by created_at`
   const [{ count }] = await sql`select count(*)::int as count from members where planner_id = ${id}`
   return { ...p, members: count, tasks, custom }

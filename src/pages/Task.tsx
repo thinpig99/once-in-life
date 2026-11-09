@@ -5,6 +5,7 @@ import { useStore } from '../store'
 import { addDays, allItems, daysLeft, fmtDate, leftLabel, stateOf, usedByCat, won } from '../lib'
 import { Back, Icon } from '../components'
 import TaskSheet from '../TaskSheet'
+import CeremonyOrder from '../CeremonyOrder'
 
 export default function Task() {
   const { key } = useParams()
@@ -80,6 +81,14 @@ export default function Task() {
               })}
             </div>
           </div>
+        )}
+
+        {def.link && (
+          <a href={def.link.url} target="_blank" rel="noopener" className="btn-line" style={{ marginTop: -6 }}>{def.link.label}<Icon n="right" s={16} w={2} /></a>
+        )}
+
+        {def.key === 'program' && (
+          <CeremonyOrder value={s.extra?.steps} onSave={(steps) => patchTask(def.key, { extra: { ...(s.extra || {}), steps }, status: s.status === 0 ? 1 : s.status })} />
         )}
 
         <div>

@@ -24,6 +24,7 @@ function context(p) {
       let line = `- ${t.name} [${AXES.find((a) => a.key === t.axis)?.name || ''}] (권장 ${timingLabel(t.offset)}${t.custom ? ', 직접 추가' : ''}): ${STATUS[s?.status || 0]}, 세부 ${subsDone}/${t.subs.length}`
       if (s?.spent) line += `, 사용 ${s.spent}만원`
       if (s?.memo) line += `, 메모: ${s.memo.slice(0, 200)}`
+      if (s?.extra?.steps) line += `, 식순: ${s.extra.steps.map((x) => x.name + (x.song ? '(' + x.song + ')' : '')).join(' > ').slice(0, 400)}`
       lines.push(line)
     })
   })

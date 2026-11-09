@@ -1,9 +1,9 @@
 import { CATS, mergeTasks } from '../shared/catalog.js'
 
-export type TaskState = { key: string; status: number; spent: number; memo: string; subs: boolean[]; hidden?: boolean; name?: string | null; offset_days?: number | null; sub_names?: string[] | null }
+export type TaskState = { key: string; status: number; spent: number; memo: string; subs: boolean[]; hidden?: boolean; name?: string | null; offset_days?: number | null; sub_names?: string[] | null; extra?: any }
 export type Custom = { key: string; phase: number; name: string; offset_days: number; axis: string; cat: string | null; sub_names: string[] }
 export type Planner = { id: string; wedding_date: string | null; budget: number; pct: number[]; invite_code: string; members: number; tasks: TaskState[]; custom: Custom[] }
-export type Item = { key: string; phase: number; axis: string; name: string; offset: number; cat: string | null; desc: string; subs: string[]; tip: string; why: string; custom: boolean; hidden: boolean }
+export type Item = { key: string; phase: number; axis: string; name: string; offset: number; cat: string | null; desc: string; subs: string[]; tip: string; why: string; link?: { label: string; url: string } | null; custom: boolean; hidden: boolean }
 
 const TOKEN = 'oil_token'
 export const getToken = () => { try { return localStorage.getItem(TOKEN) } catch { return null } }
@@ -66,5 +66,5 @@ export function adjustPct(pct: number[], i: number, dl: number) {
 export const OFFSET_CHOICES: [number, string][] = [
   ...[15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2].map((m) => [-m * 30, `${m}개월 전`] as [number, string]),
   [-30, '1개월 전'], [-21, '3주 전'], [-14, '2주 전'], [-7, '1주 전'], [-3, '3일 전'], [-1, '하루 전'],
-  [7, '결혼 후 1주'], [14, '결혼 후 2주'], [30, '결혼 후 1개월'], [60, '결혼 후 2개월'],
+  [0, '결혼 당일'], [3, '결혼 후 3일'], [7, '결혼 후 1주'], [14, '결혼 후 2주'], [30, '결혼 후 1개월'], [60, '결혼 후 2개월'],
 ]
