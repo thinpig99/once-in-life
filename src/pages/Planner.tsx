@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { TASKS } from '../../shared/catalog.js'
 import { useStore } from '../store'
-import { api, daysTo, stateOf, won } from '../lib'
+import { api, daysTo, stateOf, visibleItems, won } from '../lib'
 import { Icon, TabBar } from '../components'
 
 type Msg = { role: 'user' | 'model'; text: string }
@@ -18,7 +17,8 @@ export default function Planner() {
   useEffect(() => { end.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs, busy])
   if (!p) return null
 
-  const done = TASKS.filter((t) => stateOf(p, t.key).status === 2).length
+  const vis = visibleItems(p)
+  const done = vis.filter((t) => stateOf(p, t.key).status === 2).length
   const used = p.tasks.reduce((a, t) => a + (t.spent || 0), 0)
   const send = async (text: string) => {
     text = text.trim()
@@ -42,7 +42,7 @@ export default function Planner() {
         </div>
         <div style={{ flex: 1, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ alignSelf: 'center', display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {[p.wedding_date ? `D-${daysTo(p.wedding_date)}` : '날짜 미정', `완료 ${done}/${TASKS.length}`, `예산 ${won(used)} / ${won(p.budget)}만원`].map((x) => (
+            {[p.wedding_date ? `D-${daysTo(p.wedding_date)}` : '날짜 미정', `완료 ${done}/${vis.length}`, `예산 ${won(used)} / ${won(p.budget)}만원`].map((x) => (
               <span key={x} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 999, background: 'var(--bg2)', color: 'var(--sub)' }}>{x}</span>
             ))}
           </div>

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { api, getToken, setToken, type Planner, type TaskState } from './lib'
+import { api, getToken, setToken, type Planner, type TaskState, type Custom } from './lib'
 
 type Store = {
   planner: Planner | null
@@ -8,6 +8,9 @@ type Store = {
   leave: () => void
   patchPlanner: (b: Partial<Pick<Planner, 'wedding_date' | 'budget' | 'pct'>>) => Promise<void>
   patchTask: (key: string, b: Partial<Omit<TaskState, 'key'>>) => Promise<void>
+  addCustom: (b: Omit<Custom, 'key'>) => Promise<string | null>
+  editCustom: (key: string, b: Partial<Omit<Custom, 'key'>>) => Promise<void>
+  removeCustom: (key: string) => Promise<void>
   toast: (m: string) => void
 }
 
@@ -43,8 +46,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     try { await api('task', 'PATCH', { key, ...b }) } catch (e: any) { toast(e.message) }
   }
 
+  const addCustom: Store['addCustom'] = async (b) => {
+    try { const d = await api('custom', 'POST', b); setPlanner((p) => (p ? { ...p, custom: [...(p.custom || []), d.custom] } : p)); return d.custom.key } catch (e: any) { toast(e.message); return null }
+  }
+  const editCustom: Store['editCustom'] = async (key, b) => {
+    setPlanner((p) => (p ? { ...p, custom: p.custom.map((c) => (c.key === key ? { ...c, ...b } : c)) } : p))
+    try { await api('custom', 'PATCH', { key, ...b }) } catch (e: any) { toast(e.message) }
+  }
+  const removeCustom: Store['removeCustom'] = async (key) => {
+    setPlanner((p) => (p ? { ...p, custom: p.custom.filter((c) => c.key !== key), tasks: p.tasks.filter((t) => t.key !== key) } : p))
+    try { await api('custom', 'DELETE', { key }) } catch (e: any) { toast(e.message) }
+  }
+
   return (
-    <Ctx.Provider value={{ planner, loading, start, leave, patchPlanner, patchTask, toast }}>
+    <Ctx.Provider value={{ planner, loading, start, leave, patchPlanner, patchTask, addCustom, editCustom, removeCustom, toast }}>
       {children}
       {msg && <div className="toast" role="status">{msg}</div>}
     </Ctx.Provider>

@@ -1,26 +1,27 @@
 import { sql, auth, loadPlanner } from './_db.js'
-import { TASKS, CATS, PHASES, STATUS, timingLabel } from '../shared/catalog.js'
+import { CATS, PHASES, STATUS, AXES, timingLabel, mergeTasks } from '../shared/catalog.js'
 
 function context(p) {
   const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)
   const byKey = Object.fromEntries(p.tasks.map((t) => [t.key, t]))
+  const ALL = mergeTasks(p.tasks, p.custom).filter((t) => !t.hidden)
   const dday = p.wedding_date ? Math.round((new Date(p.wedding_date) - new Date(today)) / 86400e3) : null
   const lines = [
     `오늘: ${today}`,
     `결혼 예정일: ${p.wedding_date ? `${p.wedding_date} (D-${dday})` : '미정'}`,
     `총 예산: ${p.budget}만원`,
     `항목별 예산: ${CATS.map((c, i) => {
-      const used = TASKS.filter((t) => t.cat === c.key).reduce((a, t) => a + (byKey[t.key]?.spent || 0), 0)
+      const used = ALL.filter((t) => t.cat === c.key).reduce((a, t) => a + (byKey[t.key]?.spent || 0), 0)
       return `${c.name} ${Math.round((p.budget * p.pct[i]) / 100)}만원 중 ${used}만원 사용`
     }).join(', ')}`,
     '체크리스트:',
   ]
   PHASES.forEach((ph, i) => {
     lines.push(`[${ph}]`)
-    TASKS.filter((t) => t.phase === i).forEach((t) => {
+    ALL.filter((t) => t.phase === i).forEach((t) => {
       const s = byKey[t.key]
       const subsDone = (s?.subs || []).filter(Boolean).length
-      let line = `- ${t.name} (권장 ${timingLabel(t.offset)}): ${STATUS[s?.status || 0]}, 세부 ${subsDone}/${t.subs.length}`
+      let line = `- ${t.name} [${AXES.find((a) => a.key === t.axis)?.name || ''}] (권장 ${timingLabel(t.offset)}${t.custom ? ', 직접 추가' : ''}): ${STATUS[s?.status || 0]}, 세부 ${subsDone}/${t.subs.length}`
       if (s?.spent) line += `, 사용 ${s.spent}만원`
       if (s?.memo) line += `, 메모: ${s.memo.slice(0, 200)}`
       lines.push(line)

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
-import { TASKS, timingLabel } from '../../shared/catalog.js'
+import { timingLabel } from '../../shared/catalog.js'
 import { useStore } from '../store'
-import { stateOf } from '../lib'
+import { stateOf, visibleItems } from '../lib'
 import { TabBar } from '../components'
 
 const CATS = ['웨딩홀', '스드메', '스냅·영상', '신혼여행', '예물', '한복·예복', '청첩장']
@@ -9,7 +9,7 @@ const CATS = ['웨딩홀', '스드메', '스냅·영상', '신혼여행', '예�
 export default function Vendors() {
   const { planner: p } = useStore()
   if (!p) return null
-  const now = [...TASKS].sort((a, b) => a.offset - b.offset).find((t) => t.cat && stateOf(p, t.key).status !== 2)
+  const now = visibleItems(p).find((t) => t.cat && stateOf(p, t.key).status !== 2)
   return (
     <>
       <div className="page">

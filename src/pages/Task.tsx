@@ -1,25 +1,30 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { PHASES, TASKS, CATS, STATUS, timingLabel } from '../../shared/catalog.js'
+import { PHASES, CATS, AXES, STATUS, timingLabel } from '../../shared/catalog.js'
 import { useStore } from '../store'
-import { addDays, today, fmtDate, leftLabel, stateOf, usedByCat, won } from '../lib'
+import { addDays, allItems, daysLeft, fmtDate, leftLabel, stateOf, usedByCat, won } from '../lib'
 import { Back, Icon } from '../components'
+import TaskSheet from '../TaskSheet'
 
 export default function Task() {
   const { key } = useParams()
   const { planner: p, patchTask } = useStore()
-  const def = TASKS.find((t) => t.key === key)
+  const items = p ? allItems(p) : []
+  const def = items.find((t) => t.key === key)
   const s = p && def ? stateOf(p, def.key) : null
   const [spent, setSpent] = useState(String(s?.spent || ''))
   const [memo, setMemo] = useState(s?.memo || '')
+  const [editing, setEditing] = useState(false)
   useEffect(() => { setSpent(String(s?.spent || '')); setMemo(s?.memo || '') }, [key])
   if (!p || !def || !s) return <Navigate to="/" replace />
 
-  const all = [...TASKS].sort((a, b) => a.offset - b.offset)
-  const idx = all.findIndex((t) => t.key === def.key)
-  const prev = all[idx - 1], next = all[idx + 1]
+  const axis = AXES.find((a) => a.key === def.axis)
+  const sameAxis = items.filter((t) => t.axis === def.axis && !t.hidden)
+  const idx = sameAxis.findIndex((t) => t.key === def.key)
+  const prev = idx > 0 ? sameAxis[idx - 1] : null
+  const next = idx >= 0 && idx < sameAxis.length - 1 ? sameAxis[idx + 1] : null
   const due = p.wedding_date ? addDays(p.wedding_date, def.offset) : null
-  const left = due ? Math.round((due.getTime() - today().getTime()) / 86400e3) : null
+  const left = daysLeft(p, def.offset)
   const ci = CATS.findIndex((c) => c.key === def.cat)
   const catBudget = ci >= 0 ? Math.round((p.budget * p.pct[ci]) / 100) : null
   const catUsed = ci >= 0 ? usedByCat(p)[ci] : 0
@@ -31,15 +36,22 @@ export default function Task() {
   }
   const saveSpent = () => { const v = Math.min(100000, Number(spent.replace(/[^0-9]/g, '')) || 0); if (v !== s.spent) patchTask(def.key, { spent: v, status: s.status === 0 && v > 0 ? 1 : s.status }) }
   const saveMemo = () => { if (memo !== s.memo) patchTask(def.key, { memo }) }
+  const whyTitle = def.offset < 0 ? `왜 ${timingLabel(def.offset)}일까요?` : '왜 이때일까요?'
 
   return (
     <>
       <div className="page" style={{ gap: 16 }}>
-        <Back />
+        <div className="top" style={{ justifyContent: 'space-between' }}>
+          <Back />
+          <button onClick={() => setEditing(true)} style={{ height: 40, border: 'none', background: 'transparent', color: 'var(--main)', fontSize: 15, fontWeight: 700, padding: 0 }}>편집</button>
+        </div>
         <div style={{ marginTop: -8 }}>
-          <div className="muted small">{def.phase + 1}. {PHASES[def.phase]}</div>
+          <div className="muted small" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: axis?.color }} />{axis?.name} · {def.phase + 1}. {PHASES[def.phase]}{def.custom ? ' · 직접 추가' : ''}
+          </div>
           <h1 className="h1" style={{ marginTop: 4 }}>{def.name}</h1>
-          <p className="muted" style={{ fontSize: 14, lineHeight: 1.5, margin: '4px 0 0' }}>{def.desc}</p>
+          {def.desc && <p className="muted" style={{ fontSize: 14, lineHeight: 1.5, margin: '4px 0 0' }}>{def.desc}</p>}
+          {def.hidden && <p style={{ fontSize: 13, color: 'var(--danger)', margin: '6px 0 0' }}>숨긴 항목이에요. 편집에서 다시 보이게 할 수 있어요.</p>}
         </div>
 
         <div className="card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -50,6 +62,25 @@ export default function Task() {
           </div>
           {left !== null && s.status !== 2 && <span className="chip" style={left < 0 ? { background: '#F6DADA', color: 'var(--danger)' } : { background: 'var(--peach-bg)', color: 'var(--peach-ink)' }}>{leftLabel(left)}</span>}
         </div>
+
+        {(def.why || prev || next) && (
+          <div style={{ background: '#FBF1EC', borderRadius: 18, padding: 16 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--peach-ink)' }}>{def.why ? whyTitle : '앞뒤 일정'}</div>
+            {def.why && <div style={{ fontSize: 14, lineHeight: 1.65, color: '#5E3E2F', marginTop: 8 }}>{def.why}</div>}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12, fontSize: 13 }}>
+              {([['먼저', prev], ['다음', next]] as const).filter(([, t]) => t).map(([l, t]) => {
+                const ts = stateOf(p, t!.key).status
+                return (
+                  <Link key={l} to={`/task/${t!.key}`} replace style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', borderRadius: 10, padding: '10px 12px' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#B98B78', width: 32 }}>{l}</span>
+                    <span style={{ flex: 1 }}>{t!.name}</span>
+                    <span style={{ fontWeight: 600, color: ts === 2 ? '#46566E' : 'var(--mid)' }}>{ts === 2 ? '완료' : timingLabel(t!.offset)}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         <div>
           <div className="muted small" style={{ marginBottom: 6 }}>진행 상태</div>
@@ -76,38 +107,27 @@ export default function Task() {
           </div>
         </div>
 
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}><span className="h2" style={{ fontSize: 16 }}>세부 할 일</span><span className="muted small">{subs.filter(Boolean).length}/{subs.length}</span></div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {def.subs.map((n, i) => (
-              <button key={n} onClick={() => toggleSub(i)} aria-pressed={subs[i]} style={{ minHeight: 48, border: 'none', borderRadius: 12, background: 'var(--bg2)', padding: '0 14px', display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left', fontSize: 14 }}>
-                <span style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', background: subs[i] ? 'var(--check)' : '#fff', border: subs[i] ? 'none' : '1.5px solid var(--line2)' }}>{subs[i] && <Icon n="tick" s={11} w={3} />}</span>
-                <span style={{ flex: 1, color: subs[i] ? 'var(--faint)' : undefined, textDecoration: subs[i] ? 'line-through' : undefined }}>{n}</span>
-              </button>
-            ))}
+        {def.subs.length > 0 && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}><span className="h2" style={{ fontSize: 16 }}>세부 할 일</span><span className="muted small">{subs.filter(Boolean).length}/{subs.length}</span></div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {def.subs.map((n, i) => (
+                <button key={i} onClick={() => toggleSub(i)} aria-pressed={subs[i]} style={{ minHeight: 48, border: 'none', borderRadius: 12, background: 'var(--bg2)', padding: '0 14px', display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left', fontSize: 14 }}>
+                  <span style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', background: subs[i] ? 'var(--check)' : '#fff', border: subs[i] ? 'none' : '1.5px solid var(--line2)' }}>{subs[i] && <Icon n="tick" s={11} w={3} />}</span>
+                  <span style={{ flex: 1, color: subs[i] ? 'var(--faint)' : undefined, textDecoration: subs[i] ? 'line-through' : undefined }}>{n}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        <div style={{ background: 'var(--soft)', borderRadius: 18, padding: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 700, color: 'var(--deep)' }}><Icon n="spark" s={18} />AI 플래너 팁</div>
-          <div style={{ fontSize: 14, lineHeight: 1.6, color: '#4A3757', marginTop: 8 }}>{def.tip}</div>
-          <Link to="/planner" style={{ display: 'inline-block', marginTop: 10, fontSize: 13, fontWeight: 700, color: 'var(--main)' }}>플래너에게 더 물어보기</Link>
-        </div>
-
-        <div>
-          <div className="h2" style={{ fontSize: 16, marginBottom: 8 }}>일정 연결</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13 }}>
-            {[['이전', prev], ['다음', next]].filter(([, t]) => t).map(([l, t]: any) => {
-              const ts = stateOf(p, t.key).status
-              return (
-                <Link key={l} to={`/task/${t.key}`} replace style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', border: '1px solid var(--line)', borderRadius: 12 }}>
-                  <span className="muted" style={{ width: 36 }}>{l}</span><span style={{ flex: 1 }}>{t.name}</span>
-                  <span style={{ fontWeight: 600, color: ts === 2 ? '#46566E' : 'var(--mid)' }}>{ts === 2 ? '완료' : timingLabel(t.offset)}</span>
-                </Link>
-              )
-            })}
+        {def.tip && (
+          <div style={{ background: 'var(--soft)', borderRadius: 18, padding: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 700, color: 'var(--deep)' }}><Icon n="spark" s={18} />AI 플래너 팁</div>
+            <div style={{ fontSize: 14, lineHeight: 1.6, color: '#4A3757', marginTop: 8 }}>{def.tip}</div>
+            <Link to="/planner" style={{ display: 'inline-block', marginTop: 10, fontSize: 13, fontWeight: 700, color: 'var(--main)' }}>플래너에게 더 물어보기</Link>
           </div>
-        </div>
+        )}
 
         <div>
           <label htmlFor="memo" className="h2" style={{ display: 'block', fontSize: 16, marginBottom: 8 }}>메모</label>
@@ -121,6 +141,7 @@ export default function Task() {
       <div className="bottom-cta">
         <button className="btn" style={s.status === 2 ? { background: 'var(--faint)' } : undefined} onClick={() => patchTask(def.key, { status: s.status === 2 ? 1 : 2 })}>{s.status === 2 ? '완료됨 · 되돌리기' : '이 단계 완료하기'}</button>
       </div>
+      {editing && <TaskSheet item={def} onClose={() => setEditing(false)} />}
     </>
   )
 }

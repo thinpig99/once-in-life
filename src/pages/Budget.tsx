@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { TASKS, CATS } from '../../shared/catalog.js'
+import { CATS } from '../../shared/catalog.js'
 import { useStore } from '../store'
-import { adjustPct, stateOf, usedByCat, won } from '../lib'
+import { adjustPct, stateOf, usedByCat, visibleItems, won } from '../lib'
 import { Back, Dial, PctEditor } from '../components'
 
 export default function Budget() {
@@ -38,7 +38,7 @@ export default function Budget() {
       <h2 className="h2" style={{ marginTop: 8 }}>사용 내역</h2>
       {CATS.map((c, i) => {
         const b = Math.round((budget * p.pct[i]) / 100)
-        const items = TASKS.filter((t) => t.cat === c.key && stateOf(p, t.key).spent > 0)
+        const items = visibleItems(p).filter((t) => t.cat === c.key && stateOf(p, t.key).spent > 0)
         const r = b ? used[i] / b : 0
         return (
           <div key={c.key} style={{ border: '1px solid var(--line)', borderRadius: 16, padding: 14 }}>
