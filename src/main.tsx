@@ -1,6 +1,6 @@
-import { StrictMode } from 'react'
+import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Analytics } from '@vercel/analytics/react'
 import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css'
 import './index.css'
@@ -13,6 +13,12 @@ import Budget from './pages/Budget'
 import Planner from './pages/Planner'
 import Vendors from './pages/Vendors'
 import Me from './pages/Me'
+
+function ScrollTop() {
+  const { pathname } = useLocation()
+  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  return null
+}
 
 function Routed() {
   const { planner, loading } = useStore()
@@ -43,6 +49,7 @@ function Routed() {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
+      <ScrollTop />
       <StoreProvider>
         <div className="app"><Routed /></div>
       </StoreProvider>
